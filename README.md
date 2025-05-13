@@ -2,7 +2,8 @@
 
 ### Usage
 
-Open the directory in R-Studio
+Clone the repository and open the directory in R-Studio. Then:
+
 1. Run the app through terminal with "Rscript FP_Visualization_App.R"
 2. Click the IP-address in "Listening on http://xxx.x.x.x:xxxx"
 3. The app opens in browser
