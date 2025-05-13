@@ -38,5 +38,5 @@ If you have your own, additional data, make sure it is in the same format as the
 
 There has been some issues when working with iOS on some app versions. Feel free to modify the code locally if you encounter any issues.
 
-In case of any additional problems, you can contact the author (you should have the email-address, did not share here to reduce possible spam)
+In case of any additional problems, you can contact the author (you should have the email-address, did not share here to reduce possible spam).
 Also, if you  have some ideas of improvements or happen to implement them yourself, feel free to contact! :)
