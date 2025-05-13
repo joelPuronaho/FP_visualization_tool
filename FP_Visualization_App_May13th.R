@@ -1,3 +1,29 @@
+#### Debug / Improvement list:
+# - Comparison mode should be default probably
+# - Reading NUTS-shp to "nuts_path = 'path/data'"
+# - Additional metadata? Check "SELFNOTE"
+# - Default vars
+# - Zoom
+# - Palette: value interval, colors ok?
+# - EFISCEN:
+#   - Forest surface area bugged
+#   - Not showing NUTS-names
+#   -> Change the NUTS-name to be drawn from shp, if not already. If it is: ?
+
+## Larger Changes:
+# - Country-level + NUTS 0, 1, 2, 3. "NUTS1 + NUTS2" too.
+# - Average, sum, total, etc?
+# - Climate data
+# - 
+
+## Others' suggestions:
+# "y-axis, on your plot below the map"
+# "if there is more metadata- e.g. how the variable was derived, would be good to post that somewhere, e.g. underneath the timeseries plot"
+# "y-axis, there should be the "long name" of the variable, not the Variable, e.g. "Growing stock" as opposed to "GS" and "Nitrogen leaching" vs "N"."
+# " some countries are grey, or white, and  also white within the EU-simulation extent there is some white, it would be good to have that  described what the difference is. I see grey = no data. and white looks like it could be 0 or no data."
+#  - On this. Check the input data and NUTS-data on which countries are included etc.
+########################################################################################################
+
 library(shiny)
 library(dplyr)
 library(readr)
@@ -9,9 +35,11 @@ library(tidyr)
 library(plotly)
 
 # --- Load static NUTS shape ---
+# SELFNOTE: Should change the file path to -> path = "path/to/stuff/", and use it in the other cases later too.
 nuts_shape <- st_read("data/nuts/NUTS_RG_60M_2021_4326_LEVL_2.shp")
 
 # --- List forest data files and extract metadata ---
+# SELFNOTE: Here also might be better to use path = "XX"
 available_files <- list.files("data/forest/NUTS-2_averages", pattern = "\\.csv$", full.names = FALSE)
 
 # Parse scenario, case, and forest_model from filenames
@@ -40,11 +68,9 @@ ui <- fluidPage(
   titlePanel("Visualization App - Work in Progress"),
   sidebarLayout(
     sidebarPanel(
-      #selectInput("file_A", "Select Forest File A", choices = sort(file_info$filename)),
       selectInput("file_A", "Select Forest File A", 
                   choices = sort(file_info$filename),
                   selected = {
-                    # Pick first LPJ-GUESS match for A
                     lpj_files <- file_info %>% filter(forest_model == "LPJ-GUESS")
                     if (nrow(lpj_files) >= 1) lpj_files$filename[1] else NULL
                   }),
@@ -53,11 +79,9 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.compare_mode == true",
         tagList(
-          #selectInput("file_B", "Select Forest File B", choices = sort(file_info$filename)),
           selectInput("file_B", "Select Forest File B", 
                       choices = sort(file_info$filename),
                       selected = {
-                        # Pick second LPJ-GUESS match for B
                         lpj_files <- file_info %>% filter(forest_model == "LPJ-GUESS")
                         if (nrow(lpj_files) >= 2) lpj_files$filename[2] else NULL
                       }),
@@ -102,10 +126,8 @@ ui <- fluidPage(
               tags$li("Choose multiple variables for radar comparison.")
             )
           )
-
       ),
       br(),
-      #uiOutput("timeseries_info"),
       plotOutput("timeseries_plot", height = 300),
       br(),
       uiOutput("summary_info"),
@@ -119,6 +141,7 @@ server <- function(input, output, session) {
 
   load_forest_data <- function(filename) {
     req(filename)
+    # SELFNOTE: This to -> path = "XXXX"
     filepath <- file.path("data/forest/NUTS-2_averages", filename)
     validate(need(file.exists(filepath), paste("File not found:", filename)))
 
@@ -129,6 +152,7 @@ server <- function(input, output, session) {
       mutate(across(where(is.character), str_trim))
   }
 
+  # SELFNOTE: Additional metadata could be good. Variable is used in couple of instances, so maybe include that.
   get_metadata <- function(filename) {
     entry <- file_info[file_info$filename == filename, ]
     if (nrow(entry) == 1) {
@@ -140,16 +164,16 @@ server <- function(input, output, session) {
     }
   }
 
-  #forest_data_A <- reactive({ load_forest_data(input$file_A) })
   forest_data_A <- reactive({
     data <- load_forest_data(input$file_A)
 
-    cat("=== forest_data_A loaded ===\n")
-    cat("File A:", input$file_A, "\n")
-    print("Column names:")
-    print(names(data))
-    print("First 3 rows:")
-    print(head(data, 3))
+    # SELFNOTE: Debug-prints
+    #cat("=== forest_data_A loaded ===\n")
+    #cat("File A:", input$file_A, "\n")
+    #print("Column names:")
+    #print(names(data))
+    #print("First 3 rows:")
+    #print(head(data, 3))
 
     return(data)
   })
@@ -158,12 +182,13 @@ server <- function(input, output, session) {
     if (isTRUE(input$compare_mode)) {
       data <- load_forest_data(input$file_B)
 
-      cat("=== forest_data_B loaded ===\n")
-      cat("File B:", input$file_B, "\n")
-      print("Column names:")
-      print(names(data))
-      print("First 3 rows:")
-      print(head(data, 3))
+      # SELFNOTE: Debug-prints
+      #cat("=== forest_data_B loaded ===\n")
+      #cat("File B:", input$file_B, "\n")
+      #print("Column names:")
+      #print(names(data))
+      #print("First 3 rows:")
+      #print(head(data, 3))
 
       return(data)
     } else {
@@ -180,11 +205,6 @@ server <- function(input, output, session) {
     req(input$compare_mode, input$file_B)
     HTML(paste("<small>", get_metadata(input$file_B), "</small>"))
   })
-
-  #output$radar_info <- renderUI({
-  #  req(input$file_A)
-  #  HTML(paste("<small>", get_metadata(input$file_A), "</small>"))
-  #})
 
   output$radar_info <- renderUI({
     req(input$file_A)
@@ -204,11 +224,6 @@ server <- function(input, output, session) {
     HTML(paste("<strong>Time Series Info:</strong><br/>", get_metadata(input$file_A)))
   })
 
-
-  #output$summary_info <- renderUI({
-  #  req(input$file_A)
-  #  HTML(paste("<strong>Summary Stats Info:</strong><br/>", get_metadata(input$file_A)))
-  #})
   output$summary_info <- renderUI({
     req(input$file_A, input$variable)
     HTML(paste(
@@ -218,21 +233,13 @@ server <- function(input, output, session) {
     ))
   })
 
-
-
   observe({
     updateCheckboxGroupInput(session, "variable_multi", choices = sort(unique(forest_data_A()$variable)))
   })
 
-  #output$select_variable <- renderUI({
-  #  selectInput("variable", "Variable A", choices = sort(unique(forest_data_A()$variable)))
-  #})
-#
-  #output$select_variable_compare <- renderUI({
-  #  req(forest_data_B())
-  #  selectInput("variable_compare", "Variable B", choices = sort(unique(forest_data_B()$variable)), selected = input$variable)
-  #})
-
+  # SELFNOTE: Some more clever way to set the default var. 
+  # Now just "Stand_C", could be set to only positive vars 
+  # (although all vars should be positive in the final outputs?)
   output$select_variable <- renderUI({
     vars <- sort(unique(forest_data_A()$variable))
     default_var <- vars[startsWith(vars, "Stand_C")][1]
@@ -241,6 +248,7 @@ server <- function(input, output, session) {
     selectInput("variable", "Variable A", choices = vars, selected = default_var)
   })
 
+  # SELFNOTE: Same as above
   output$select_variable_compare <- renderUI({
     req(forest_data_B())
     vars <- sort(unique(forest_data_B()$variable))
@@ -250,18 +258,7 @@ server <- function(input, output, session) {
     selectInput("variable_compare", "Variable B", choices = vars, selected = default_var)
   })
 
-  #output$select_year <- renderUI({
-  #  years <- sort(unique(forest_data_A()$year))
-  #  sliderInput("year", "Year A", min = min(years), max = max(years), value = min(years), step = 1, sep = "", animate = animationOptions(interval = 1500))
-  #})
-#
-  #output$select_year_compare <- renderUI({
-  #  req(forest_data_B())
-  #  years <- sort(unique(forest_data_B()$year))
-  #  sliderInput("year_compare", "Year B", min = min(years), max = max(years), value = max(years), step = 1, sep = "", animate = animationOptions(interval = 1500))
-  #})
-
-
+  # SELFNOTE: Similar to above
   output$select_year <- renderUI({
     years <- sort(unique(forest_data_A()$year))
     default_year <- if (2025 %in% years) 2025 else min(years)
@@ -271,6 +268,7 @@ server <- function(input, output, session) {
                 animate = animationOptions(interval = 1500))
   })
 
+  # SELFNOTE: Same
   output$select_year_compare <- renderUI({
     req(forest_data_B())
     years <- sort(unique(forest_data_B()$year))
@@ -294,6 +292,7 @@ server <- function(input, output, session) {
   selected_nuts <- reactiveVal(NULL)
   observeEvent(input$map_shape_click, { selected_nuts(input$map_shape_click$id) })
 
+  # SELFNOTE: The zoom should be checked.
   map_state <- reactiveValues(zoom = 4, center = list(lng = 10, lat = 57))
   observeEvent(input$map_zoom, { map_state$zoom <- input$map_zoom })
   observeEvent(input$map_center, { map_state$center <- input$map_center })
@@ -316,6 +315,7 @@ server <- function(input, output, session) {
 
       display_col <- if (input$compare_type == "absolute") "difference" else "percent_change"
       max_abs <- max(abs(map_data[[display_col]]), na.rm = TRUE)
+      # SELFNOTE: Is palette ok? The value interval should remain somewhat constant
       pal <- colorNumeric("RdYlBu", domain = c(-max_abs, max_abs), na.color = "#d9d9d9", reverse = TRUE)
 
       leaflet(map_data) %>%
@@ -327,18 +327,14 @@ server <- function(input, output, session) {
           color = "#333", weight = 0.7, layerId = ~NUTS_ID,
           label = ~lapply(paste0(
             "<strong>NUTS ID:</strong> ", NUTS_ID,
-            #if (input$compare_type == "absolute") {
-            #  paste0("<br/><strong>Difference:</strong> ", round(difference, 4), " units")
-            #} else {
-            #  paste0("<br/><strong>% Change:</strong> ", round(percent_change, 2), "%")
-            #},
             if (input$compare_type == "absolute") {
               paste0("<br/><strong>Difference:</strong> ", round(difference, 4), " ", unit)
             } else {
               paste0("<br/><strong>% Change:</strong> ", round(percent_change, 2), "%")
             },
-            #"<br/><strong>Forest Surface Area:</strong> ",
-            #formatC(forest_surface_area, format = "f", big.mark = ",", digits = 2), " km²",
+            # SELFNOTE: Check this. EFISCEN not ok.
+            "<br/><strong>Forest Surface Area:</strong> ",
+            formatC(forest_surface_area, format = "f", big.mark = ",", digits = 2), " km²",
             "<br/><strong>NUTS-area Surface Area:</strong> ",
             formatC(surface_area, format = "f", big.mark = ",", digits = 0), " km²",
             "<br/><strong>NUTS Area Name:</strong> ", nuts_name
@@ -353,16 +349,10 @@ server <- function(input, output, session) {
         addLegend("bottomright", colors = "#d9d9d9", labels = "No data", opacity = 0.8, title = NULL)
 
     } else {
-      #df <- filtered_data_A() %>%
-      #  filter(!is.na(weighted_average_value)) %>%
-      #  select(NUTS_ID, weighted_average_value, forest_surface_area, surface_area, nuts_name = NUTS_NAME)
       df <- filtered_data_A() %>%
         filter(!is.na(weighted_average_value)) %>%
         select(NUTS_ID, weighted_average_value, forest_surface_area, surface_area, nuts_name = NUTS_NAME, unit)
-
-
       map_data <- nuts_shape %>% left_join(df, by = "NUTS_ID")
-
       pal <- colorNumeric("YlGn", domain = map_data$weighted_average_value, na.color = "#d9d9d9")
 
       leaflet(map_data) %>%
@@ -374,17 +364,14 @@ server <- function(input, output, session) {
           color = "#333", weight = 0.7, layerId = ~NUTS_ID,
           label = ~lapply(paste0(
             "<strong>NUTS ID:</strong> ", NUTS_ID,
-            #"<br/><strong>Value:</strong> ",
-            #ifelse(weighted_average_value < 0.01,
-            #       formatC(weighted_average_value, format = "e", digits = 2),
-            #       round(weighted_average_value, 2)), " units",
             "<br/><strong>Value:</strong> ",
             ifelse(weighted_average_value < 0.01,
                    formatC(weighted_average_value, format = "e", digits = 2),
                    round(weighted_average_value, 2)), " ",
             unit,
-            #"<br/><strong>Forest Surface Area:</strong> ",
-            #formatC(forest_surface_area, format = "f", big.mark = ",", digits = 2), " km²",
+            # SELFNOTE: Check this. EFISCEN not ok.
+            "<br/><strong>Forest Surface Area:</strong> ",
+            formatC(forest_surface_area, format = "f", big.mark = ",", digits = 2), " km²",
             "<br/><strong>NUTS-area Surface Area:</strong> ",
             formatC(surface_area, format = "f", big.mark = ",", digits = 0), " km²",
             "<br/><strong>NUTS Area Name:</strong> ", nuts_name
@@ -399,8 +386,13 @@ server <- function(input, output, session) {
     }
   })
 
+  # SELFNOTE: Fix this:
+  # - Normalization not working properly if value == 0
+  # - When hovering over: "zoom, download etc." showing on top of other text
+  # - Variable names not showing
+  # - Probably something else too
 
-    output$radar_plot <- renderPlotly({
+  output$radar_plot <- renderPlotly({
     req(input$variable_multi, selected_nuts(), input$year)
 
     df_all_A <- forest_data_A() %>% filter(variable %in% input$variable_multi)
@@ -466,15 +458,7 @@ server <- function(input, output, session) {
     )
   })
 
-  #output$timeseries_plot <- renderPlot({
-  #  req(selected_nuts())
-  #  df <- forest_data_A() %>% filter(NUTS_ID == selected_nuts(), variable == input$variable)
-  #  validate(need(nrow(df) > 0, "No data for selected NUTS region."))
-  #  plot(df$year, df$weighted_average_value, type = "b", pch = 19,
-  #       xlab = "Year", ylab = input$variable,
-  #       main = paste("Time Series for", selected_nuts()),
-  #       col = "darkgreen")
-  #})
+  # SELFNOTE: Mikko had something on this.
   output$timeseries_plot <- renderPlot({
     req(selected_nuts(), input$variable)
 
@@ -485,9 +469,6 @@ server <- function(input, output, session) {
 
     plot(df_A$year, df_A$weighted_average_value, type = "b", pch = 19,
          xlab = "Year", ylab = input$variable,
-         #main = paste("Time Series for", selected_nuts()),
-         #main = paste("Time Series for", selected_nuts(), "| Variable:", input$variable),
-         #main = paste("Time Series for", selected_nuts(), "\n", get_metadata(input$file_A)),
          main = paste("Time Series for", selected_nuts(), 
                       "\n", get_metadata(input$file_A), 
                       "| Variable:", input$variable),
@@ -499,14 +480,10 @@ server <- function(input, output, session) {
         filter(NUTS_ID == selected_nuts(), variable == input$variable)
 
       if (nrow(df_B) > 0) {
-        # Extend ylim if needed
         all_values <- c(df_A$weighted_average_value, df_B$weighted_average_value)
         ylim_range <- range(all_values, na.rm = TRUE)
         plot(df_A$year, df_A$weighted_average_value, type = "b", pch = 19,
              xlab = "Year", ylab = input$variable,
-             #main = paste("Time Series for", selected_nuts()),
-             #main = paste("Time Series for", selected_nuts(), "\nVariable:", input$variable),
-             #main = paste("Time Series for", selected_nuts(), "\n", get_metadata(input$file_A)),
              main = paste("Time Series for", selected_nuts(), 
                       "\n", get_metadata(input$file_A), 
                       "| Variable:", input$variable),
@@ -519,7 +496,7 @@ server <- function(input, output, session) {
     }
   })
 
-
+  # SELFNOTE: Could do with some work
   output$summary_stats <- renderTable({
     df <- filtered_data_A() %>% filter(!is.na(weighted_average_value))
     validate(need(nrow(df) > 0, "No data available for selected combination."))
