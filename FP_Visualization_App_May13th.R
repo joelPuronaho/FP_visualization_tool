@@ -8,7 +8,9 @@
 # - EFISCEN:
 #   - Forest surface area bugged
 #   - Not showing NUTS-names
+#   - "LEVL_CODE" 4.0?
 #   -> Change the NUTS-name to be drawn from shp, if not already. If it is: ?
+# - In comparison mode, the variable names and units might be confusing. Now,, only shown form data A, should maybe show from  B in some cases?
 
 ## Larger Changes:
 # - Country-level + NUTS 0, 1, 2, 3. "NUTS1 + NUTS2" too.
@@ -22,7 +24,7 @@
 # "y-axis, there should be the "long name" of the variable, not the Variable, e.g. "Growing stock" as opposed to "GS" and "Nitrogen leaching" vs "N"."
 # " some countries are grey, or white, and  also white within the EU-simulation extent there is some white, it would be good to have that  described what the difference is. I see grey = no data. and white looks like it could be 0 or no data."
 #  - On this. Check the input data and NUTS-data on which countries are included etc.
-########################################################################################################
+####
 
 library(shiny)
 library(dplyr)
@@ -65,7 +67,7 @@ ui <- fluidPage(
       }
     "))
   ),
-  titlePanel("Visualization App - Work in Progress"),
+  titlePanel("Visualization App - Work in Progress | Choose the input files shown on map, click on NUTS-regions to activate the plots"),
   sidebarLayout(
     sidebarPanel(
       selectInput("file_A", "Select Forest File A", 
@@ -75,7 +77,7 @@ ui <- fluidPage(
                     if (nrow(lpj_files) >= 1) lpj_files$filename[1] else NULL
                   }),
       uiOutput("file_A_info"),
-      checkboxInput("compare_mode", "Enable comparison mode", value = FALSE),
+      checkboxInput("compare_mode", "Disable / Enable comparison mode", value = TRUE),
       conditionalPanel(
         condition = "input.compare_mode == true",
         tagList(
@@ -89,7 +91,7 @@ ui <- fluidPage(
           radioButtons("compare_type", "Show on Map:",
                        choices = c("Absolute difference" = "absolute",
                                    "Percentual change (%)" = "percent"),
-                       selected = "absolute")
+                       selected = "percent")
         )
       ),
       uiOutput("select_variable"),
@@ -126,6 +128,11 @@ ui <- fluidPage(
               tags$li("Choose multiple variables for radar comparison.")
             )
           )
+      ),
+      absolutePanel(
+        top = 10, left = "12.5%", width = 300,
+        style = "transform: translateX(-50%); background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0px 0px 5px #aaa;",
+        uiOutput("map_metadata_info")
       ),
       br(),
       plotOutput("timeseries_plot", height = 300),
@@ -177,7 +184,7 @@ server <- function(input, output, session) {
 
     return(data)
   })
-  #forest_data_B <- reactive({ if (isTRUE(input$compare_mode)) load_forest_data(input$file_B) else NULL })
+
   forest_data_B <- reactive({
     if (isTRUE(input$compare_mode)) {
       data <- load_forest_data(input$file_B)
@@ -196,6 +203,31 @@ server <- function(input, output, session) {
     }
   })
 
+
+  # SELFNOTE: New addition, metadata on top of the map.
+  output$map_metadata_info <- renderUI({
+    req(input$file_A, input$variable, input$year)
+
+    info_text <- paste0(
+      "<strong>Map Info:</strong><br/>",
+      get_metadata(input$file_A),
+      "<br/><strong>Variable:</strong> ", input$variable,
+      " | <strong>Year:</strong> ", input$year
+    )
+
+    if (isTRUE(input$compare_mode) && !is.null(input$file_B)) {
+      info_text <- paste0(
+        info_text,
+        "<br/><strong>Comparison:</strong> ", ifelse(input$compare_type == "absolute", "Absolute Difference", "Percentual Change"),
+        "<br/>", get_metadata(input$file_B)
+      )
+    } else {
+      info_text <- paste0(info_text, "<br/><strong>Mode:</strong> Single File (A)")
+    }
+
+    HTML(paste("<small>", info_text, "</small>"))
+  })
+
   output$file_A_info <- renderUI({
     req(input$file_A)
     HTML(paste("<small>", get_metadata(input$file_A), "</small>"))
@@ -209,21 +241,18 @@ server <- function(input, output, session) {
   output$radar_info <- renderUI({
     req(input$file_A)
 
-    text_a <- paste("A:", get_metadata(input$file_A))
+    # SELFNOTE: Some of the text should be bolded to make it more readable
+    text_a <- paste("Forest File A:", get_metadata(input$file_A))
 
     if (isTRUE(input$compare_mode) && !is.null(input$file_B)) {
-      text_b <- paste("B:", get_metadata(input$file_B))
+      text_b <- paste("Forest File B:", get_metadata(input$file_B))
       HTML(paste("<small>", text_a, "<br/>", text_b, "</small>"))
     } else {
       HTML(paste("<small>", text_a, "</small>"))
     }
   })
 
-  output$timeseries_info <- renderUI({
-    req(input$file_A)
-    HTML(paste("<strong>Time Series Info:</strong><br/>", get_metadata(input$file_A)))
-  })
-
+  # SELFNOTE: Should be more readable
   output$summary_info <- renderUI({
     req(input$file_A, input$variable)
     HTML(paste(
@@ -301,6 +330,7 @@ server <- function(input, output, session) {
     req(nuts_shape)
     isolate({ zoom <- map_state$zoom; center <- map_state$center })
 
+    # SELFNOTE: Unit comes from "Forest A". If user chooses data from two models, might be confusing. 
     if (isTRUE(input$compare_mode)) {
       df_diff <- full_join(
         filtered_data_A() %>% select(NUTS_ID, value_A = weighted_average_value, unit, forest_surface_area, surface_area, nuts_name = NUTS_NAME),
@@ -332,7 +362,7 @@ server <- function(input, output, session) {
             } else {
               paste0("<br/><strong>% Change:</strong> ", round(percent_change, 2), "%")
             },
-            # SELFNOTE: Check this. EFISCEN not ok.
+            # SELFNOTE: Check this. EFISCEN forest area not ok.
             "<br/><strong>Forest Surface Area:</strong> ",
             formatC(forest_surface_area, format = "f", big.mark = ",", digits = 2), " km²",
             "<br/><strong>NUTS-area Surface Area:</strong> ",
@@ -343,7 +373,7 @@ server <- function(input, output, session) {
         ) %>%
         addLegend("bottomright", pal = pal,
                   values = map_data[[display_col]][!is.na(map_data[[display_col]])],
-                  title = ifelse(input$compare_type == "absolute", "Difference (B - A)", "Percentual Change (%)"),
+                  title = ifelse(input$compare_type == "absolute", "Difference (Data B - Data A)", "Percentual Change (%)"),
                   opacity = 0.8,
                   labFormat = labelFormat(digits = 2)) %>%
         addLegend("bottomright", colors = "#d9d9d9", labels = "No data", opacity = 0.8, title = NULL)
@@ -362,6 +392,7 @@ server <- function(input, output, session) {
           fillColor = ~pal(weighted_average_value),
           fillOpacity = 0.8,
           color = "#333", weight = 0.7, layerId = ~NUTS_ID,
+          # SELFNOTE: Bad look if there's no unit (or with albedo "-")
           label = ~lapply(paste0(
             "<strong>NUTS ID:</strong> ", NUTS_ID,
             "<br/><strong>Value:</strong> ",
@@ -404,10 +435,16 @@ server <- function(input, output, session) {
                                             variable %in% input$variable_multi,
                                             year == input$year)
 
+    # SELFNOTE: Normalization still not ok. Should warn the user in the app of zero data and other edgecases.
     df_norm_A <- df_nuts_A %>% left_join(variable_ranges, by = "variable") %>%
-      mutate(norm_value = ifelse(max_val != min_val,
-                                 (weighted_average_value - min_val) / (max_val - min_val), 0.5),
-             variable = factor(variable, levels = input$variable_multi)) %>%
+      mutate(
+        norm_value = case_when(
+          max_val == min_val & max_val == 0 ~ 0,  # If the whole data is zeros -> keep as zero
+          max_val == min_val ~ 1,                # If the values are the same, non-zero -> map as 1
+          TRUE ~ (weighted_average_value - min_val) / (max_val - min_val)
+        ),
+        variable = factor(variable, levels = input$variable_multi)
+      ) %>%
       arrange(variable)
 
     validate(need(nrow(df_norm_A) > 0, "No data for radar chart."))
