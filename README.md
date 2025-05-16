@@ -19,10 +19,12 @@ Clone the repository and open the directory in R-Studio. Then:
 
 ### Data
 
-<span style="text-decoration: overline;">Four input files for forest data.</span>
-The forest data has been removed. 
+The real forest data has been removed. Ask for sample files, or add your own data.
 
-NUTS-data: Many alternative NUTS-shapefiles in data/nuts.
+NUTS-data: Many alternative NUTS-shapefiles in data/nuts. If you have your own data, make sure it is in the same format as the initial files in data/forest/sample_data: "SSP1-RCP2.6_0_FOREST-MODEL-NAME", where:
+- "SSP1-RCP2.6" is the scenario RCP combination
+- "0": refers to the exploratory case
+- "FOREST-MODEL-NAME": change to e.g. "LPJ-GUESS"
 
 Example file:
 "NUTS_RG_60M_2021_4326_LEVL_2.shp"
@@ -35,8 +37,6 @@ By changing these in the file name on row 41, you can change the input shapefile
 
 Not all the possible scale, year, CRS-system, NUTS-level combinations are in the folder. All the cases are behind the link below.
 NUTS-data source: https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/#nuts16
-
-If you have your own, additional data, make sure it is in the same format as the initial files in data/forest/NUTS-2_averages.
 
 ### Issues / Contributions
 
