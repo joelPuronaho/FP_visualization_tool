@@ -4,6 +4,8 @@
 
 Clone the repository and open the directory in R-Studio. Then:
 
+**NOTE**: The real data has been removed from the repository. Add your own data, or ask sample data from the author. The path for the NUTS-2 forest data should be "data/forest/NUTS-2_averages/"
+
 1. Run the app through terminal with "Rscript FP_Visualization_App.R"
 2. Click the IP-address in "Listening on http://xxx.x.x.x:xxxx"
 3. The app opens in browser
@@ -17,7 +19,8 @@ Clone the repository and open the directory in R-Studio. Then:
 
 ### Data
 
-Four input files for forest data.
+<span style="text-decoration: overline;">Four input files for forest data.</span>
+The forest data has been removed. 
 
 NUTS-data: Many alternative NUTS-shapefiles in data/nuts.
 
@@ -28,7 +31,7 @@ Example file:
 - "4326" = coordinate system
 - "LEVL_2" = NUTS-region level
 
-By changing these in the file name on row 12, you can change the input shapefile to e.g. be more accurate "60M" -> "01M". More accuracy == slower app.
+By changing these in the file name on row 41, you can change the input shapefile to e.g. be more accurate "60M" -> "01M". More accuracy == slower app.
 
 Not all the possible scale, year, CRS-system, NUTS-level combinations are in the folder. All the cases are behind the link below.
 NUTS-data source: https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/#nuts16
