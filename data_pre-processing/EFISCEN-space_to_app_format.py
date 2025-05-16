@@ -8,11 +8,11 @@ import sys
 # Load the data
 infile = "EFISCEN-space/MPI26_bau_NUTS2_aggregated_FP.csv"
 df = pd.read_csv(infile, sep=",", quotechar='"', skipinitialspace=True, encoding="utf-8")
-print(df.columns)
+#print(df.columns)
 
 # Cols in lower case
 df.columns = df.columns.str.lower().str.replace('"', '').str.strip()
-print(df.columns)
+#print(df.columns)
 
 # Hard-coded variable columns from the input data. 
 # *NEED TO BE CHANGED* if the input data has different variables
@@ -108,4 +108,4 @@ final_cols = [
 
 # Change the path and filename accordingly (depending on the input file)
 df_long[final_cols].to_csv("SSP1-RCP2.6_0_EFISCEN-space.csv", index=False)
-print(f"✔ Written formatted_data.csv with {len(df_long)} rows.")
+print(f"Written formatted_data.csv with {len(df_long)} rows.")
