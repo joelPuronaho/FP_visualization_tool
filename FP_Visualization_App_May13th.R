@@ -24,6 +24,7 @@
 # "y-axis, there should be the "long name" of the variable, not the Variable, e.g. "Growing stock" as opposed to "GS" and "Nitrogen leaching" vs "N"."
 # " some countries are grey, or white, and  also white within the EU-simulation extent there is some white, it would be good to have that  described what the difference is. I see grey = no data. and white looks like it could be 0 or no data."
 #  - On this. Check the input data and NUTS-data on which countries are included etc.
+# - "Maybe 5-yr intervals are enough, not much happens in between."
 ####
 
 library(shiny)
@@ -35,6 +36,9 @@ library(stringr)
 library(scales)
 library(tidyr)
 library(plotly)
+
+library(shinyWidgets)
+
 
 # --- Load static NUTS shape ---
 # SELFNOTE: Should change the file path to -> path = "path/to/stuff/", and use it in the other cases later too.
@@ -130,7 +134,8 @@ ui <- fluidPage(
           )
       ),
       absolutePanel(
-        top = 10, left = "12.5%", width = 300,
+        #top = 10, left = "12.5%", width = 300,
+        top = 30, left = "12.5%", width = 300,
         style = "transform: translateX(-50%); background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0px 0px 5px #aaa;",
         uiOutput("map_metadata_info")
       ),
@@ -290,7 +295,14 @@ server <- function(input, output, session) {
   # SELFNOTE: Similar to above
   output$select_year <- renderUI({
     years <- sort(unique(forest_data_A()$year))
+    #default_year <- if (2025 %in% years) 2025 else years[1]
     default_year <- if (2025 %in% years) 2025 else min(years)
+    #year_diff <- diff(years)
+    #step_val <- if (length(year_diff) > 0 && length(unique(year_diff)) == 1) {
+    #  unique(year_diff)
+    #} else {
+    #  1
+    #}
 
     sliderInput("year", "Year A", min = min(years), max = max(years),
                 value = default_year, step = 1, sep = "",
@@ -358,9 +370,17 @@ server <- function(input, output, session) {
           label = ~lapply(paste0(
             "<strong>NUTS ID:</strong> ", NUTS_ID,
             if (input$compare_type == "absolute") {
-              paste0("<br/><strong>Difference:</strong> ", round(difference, 4), " ", unit)
+              paste0(
+                "<br/><strong>Value A:</strong> ", round(value_A, 4), " ", unit,
+                "<br/><strong>Value B:</strong> ", round(value_B, 4), " ", unit,
+                "<br/><strong>Difference:</strong> ", round(difference, 4), " ", unit
+              )
             } else {
-              paste0("<br/><strong>% Change:</strong> ", round(percent_change, 2), "%")
+              paste0(
+                "<br/><strong>Value A:</strong> ", round(value_A, 4), " ", unit,
+                "<br/><strong>Value B:</strong> ", round(value_B, 4), " ", unit,
+                "<br/><strong>% Change:</strong> ", round(percent_change, 2), "%"
+              )
             },
             # SELFNOTE: Check this. EFISCEN forest area not ok.
             "<br/><strong>Forest Surface Area:</strong> ",
@@ -383,6 +403,10 @@ server <- function(input, output, session) {
         filter(!is.na(weighted_average_value)) %>%
         select(NUTS_ID, weighted_average_value, forest_surface_area, surface_area, nuts_name = NUTS_NAME, unit)
       map_data <- nuts_shape %>% left_join(df, by = "NUTS_ID")
+      print("Map data preview:")
+      print(head(map_data))
+      print(summary(map_data$weighted_average_value))
+      print(unique(map_data$year))
       pal <- colorNumeric("YlGn", domain = map_data$weighted_average_value, na.color = "#d9d9d9")
 
       leaflet(map_data) %>%
