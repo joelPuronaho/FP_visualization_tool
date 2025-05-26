@@ -49,7 +49,9 @@ nuts_shape <- st_read("data/nuts/NUTS_RG_60M_2021_4326_LEVL_2.shp")
 available_files <- list.files("data/forest/NUTS-2_averages", pattern = "\\.csv$", full.names = FALSE)
 
 # Parse scenario, case, and forest_model from filenames
-file_info <- str_match(available_files, "^(.+?)_(\\d+)_(.+?)\\.csv$")
+#file_info <- str_match(available_files, "^(.+?)_(\\d+)_(.+?)\\.csv$")
+#file_info <- str_match(available_files, "^(.+?)_PA?(\\d+)_([^.]+)\\.csv$")
+file_info <- str_match(available_files, "^(.+?)_([^_]+)_([^.]+)\\.csv$")
 file_info <- as.data.frame(file_info, stringsAsFactors = FALSE)
 colnames(file_info) <- c("filename", "scenario", "case", "forest_model")
 file_info <- file_info[!is.na(file_info$filename), ]
@@ -180,12 +182,12 @@ server <- function(input, output, session) {
     data <- load_forest_data(input$file_A)
 
     # SELFNOTE: Debug-prints
-    #cat("=== forest_data_A loaded ===\n")
-    #cat("File A:", input$file_A, "\n")
-    #print("Column names:")
-    #print(names(data))
-    #print("First 3 rows:")
-    #print(head(data, 3))
+    cat("=== forest_data_A loaded ===\n")
+    cat("File A:", input$file_A, "\n")
+    print("Column names:")
+    print(names(data))
+    print("First 3 rows:")
+    print(head(data, 3))
 
     return(data)
   })
@@ -195,12 +197,12 @@ server <- function(input, output, session) {
       data <- load_forest_data(input$file_B)
 
       # SELFNOTE: Debug-prints
-      #cat("=== forest_data_B loaded ===\n")
-      #cat("File B:", input$file_B, "\n")
-      #print("Column names:")
-      #print(names(data))
-      #print("First 3 rows:")
-      #print(head(data, 3))
+      cat("=== forest_data_B loaded ===\n")
+      cat("File B:", input$file_B, "\n")
+      print("Column names:")
+      print(names(data))
+      print("First 3 rows:")
+      print(head(data, 3))
 
       return(data)
     } else {

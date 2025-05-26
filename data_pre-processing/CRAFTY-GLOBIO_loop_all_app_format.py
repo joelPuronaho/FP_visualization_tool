@@ -4,15 +4,15 @@ import glob
 
 # Set input and output directories
 input_folder = "CRAFTY-GLOBIO"
-output_folder = "../data/forest/NUTS-2_averages/CRAFTY-GLOBIO_test"
+output_folder = "../data/forest/NUTS-2_averages"
 
 # Ensure output dir exists
 os.makedirs(output_folder, exist_ok=True)
 
 # Filter files
-input_files = glob.glob(os.path.join(input_folder, "NUTS2021*.csv"))
+input_files = glob.glob(os.path.join(input_folder, "*NUTS2021*.csv"))
 
-# SSPX to full scenario name
+# SSP-X to full scenario name
 scenario_map = {
     "SSP1": "SSP1-RCP2.6",
     "SSP3": "SSP3-RCP7.0"
@@ -21,7 +21,6 @@ scenario_map = {
 for file_path in input_files:
     # Extract exploratory case
     base_name = os.path.basename(file_path)
-    #print(base_name)
     
     case_name = base_name.split("_")[-1].replace(".csv", "")
 
