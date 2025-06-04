@@ -230,7 +230,7 @@ server <- function(input, output, session) {
 
   # Load metadata
   get_metadata <- function(filename) {
-    fi <- file_info()  # ✅ safely call the reactive
+    fi <- file_info()
     entry <- fi[fi$filename == filename, ]
     if (nrow(entry) == 1) {
       paste("Forest Model:", entry$forest_model,
