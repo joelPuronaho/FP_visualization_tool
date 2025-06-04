@@ -1,6 +1,6 @@
 # FP_visualization_tool
 
-## ** NEW ADDITION - Country-level application (FP_Visualization_App_NUTS-levels_0_2.R) **
+### ** NEW ADDITION - Country-level application (FP_Visualization_App_NUTS-levels_0_2.R) **
 
 **NOTE**
 This is an **early version**, and has a few issues, mainly with the pallette.
