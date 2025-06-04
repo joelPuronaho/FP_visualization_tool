@@ -1,5 +1,14 @@
 # FP_visualization_tool
 
+## ** NEW ADDITION - Country-level application (FP_Visualization_App_NUTS-levels_0_2.R) **
+
+**NOTE**
+This is an **early version**, and has a few issues, mainly with the pallette.
+
+It should still work with country level data, given that in the "NUTS_ID" column, there are NUTS-0 level codes, e.g., FI for Finland, SE for Sweden etc.
+
+I will be updating this version in the coming weeks.
+
 ### Usage
 
 Clone the repository and open the directory in R-Studio. Then:
