@@ -37,48 +37,8 @@ library(stringr)
 library(scales)
 library(tidyr)
 library(plotly)
+library(tidyverse)
 library(shinyWidgets)
-
-
-# --- Load static NUTS shape ---
-# SELFNOTE: Should change the file path to -> path = "path/to/stuff/", and use it in the other cases later too.
-#nuts_shape <- st_read("data/nuts/NUTS_RG_20M_2021_4326_LEVL_0.shp") # <- MOVED TO SERVER
-
-# --- List forest data files and extract metadata ---
-# SELFNOTE: Here also might be better to use path = "XX"
-#available_files <- list.files("data/forest/NUTS-0_averages", pattern = "\\.csv$", full.names = FALSE)
-
-# Parse scenario, case, and forest_model from filenames
-#file_info <- str_match(available_files, "^(.+?)_(\\d+)_(.+?)\\.csv$")
-#file_info <- str_match(available_files, "^(.+?)_PA?(\\d+)_([^.]+)\\.csv$")
-#file_info <- str_match(available_files, "^(.+?)_([^_]+)_([^.]+)\\.csv$")
-#file_info <- as.data.frame(file_info, stringsAsFactors = FALSE)
-#colnames(file_info) <- c("filename", "scenario", "case", "forest_model")
-#file_info <- file_info[!is.na(file_info$filename), ]
-
-# --- UI ---
-# Define the options for the user
-# - Choose data
-# - Choose mode (Comparison Mode ON / OFF)
-# - Absolute Difference / Percentual Change
-# - Choose Variable for A and B forest data
-# - Choose Years for A and B forest data
-# - Choose Radar Chart Variables
-
-#      selectInput("file_A", "Select Forest File A", 
-#                  choices = sort(file_info$filename),
-#                  selected = {
-#                    lpj_files <- file_info %>% filter(forest_model == "LPJ-GUESS")
-#                    if (nrow(lpj_files) >= 1) lpj_files$filename[1] else NULL
-#                  }),
-
-
-#          selectInput("file_B", "Select Forest File B", 
-#                      choices = sort(file_info$filename),
-#                      selected = {
-#                        lpj_files <- file_info %>% filter(forest_model == "LPJ-GUESS")
-#                        if (nrow(lpj_files) >= 2) lpj_files$filename[2] else NULL
-#                      }),
 
 ui <- fluidPage(
   tags$head(
@@ -120,6 +80,10 @@ ui <- fluidPage(
     mainPanel(
       div(style = "position: relative;",
           leafletOutput("map", height = 700),
+          div(
+            style = "position: absolute; top: 10px; right: 10px; z-index: 9999;",
+            actionButton("toggle_guide", "Show Usage Guide", icon = icon("info-circle"))
+          ),
           absolutePanel(
             bottom = 10, left = 10, width = 350,
             draggable = TRUE,
@@ -128,24 +92,27 @@ ui <- fluidPage(
             uiOutput("radar_info"),
             plotlyOutput("radar_plot", height = 300)
           ),
-          absolutePanel(
-            top = 10, right = 10, width = 300,
-            draggable = TRUE,
-            style = "background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; box-shadow: 0px 0px 5px #aaa;",
-            h5("🛈 Usage Guide"),
-            tags$ul(
-              tags$li("Select forest datasets from the left panel."),
-              tags$li("Use comparison mode to view differences."),
-              tags$li("Hover over map regions to see details."),
-              tags$li("Activate radar chart by clicking on NUTS-region and time series data."),
-              tags$li("Use the slider to choose the year."),
-              tags$li("Choose multiple variables for radar comparison.")
+          actionButton("toggle_guide", "Show Usage Guide", icon = icon("info-circle")),
+          conditionalPanel(
+            condition = "input.toggle_guide % 2 == 1",
+            absolutePanel(
+              top = 50, right = 10, width = 300,
+              draggable = TRUE,
+              style = "background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; box-shadow: 0px 0px 5px #aaa;",
+              h5("🛈 Usage Guide"),
+              tags$ul(
+                tags$li("Select forest datasets from the left panel."),
+                tags$li("Use comparison mode to view differences."),
+                tags$li("Hover over map regions to see details."),
+                tags$li("Activate radar chart by clicking on NUTS-region and time series data."),
+                tags$li("Use the slider to choose the year."),
+                tags$li("Choose multiple variables for radar comparison.")
+              )
             )
           )
       ),
       absolutePanel(
-        #top = 10, left = "12.5%", width = 300,
-        top = 30, left = "12.5%", width = 300,
+        top = 10, left = "17.5%", width = 300,
         style = "transform: translateX(-50%); background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0px 0px 5px #aaa;",
         uiOutput("map_metadata_info")
       ),
@@ -189,8 +156,6 @@ server <- function(input, output, session) {
   # Load the forest data based on user input
   load_forest_data <- function(filename) {
     req(filename)
-    # SELFNOTE: This to -> path = "XXXX"
-    #filepath <- file.path("data/forest/NUTS-0_averages", filename)
     folder <- if (input$nuts_level == "0") "NUTS-0_averages" else "NUTS-2_averages"
     filepath <- file.path("data/forest", folder, filename)
     validate(need(file.exists(filepath), paste("File not found:", filename)))
@@ -208,8 +173,16 @@ server <- function(input, output, session) {
     lpj_files <- file_info() %>% filter(forest_model == "LPJ-GUESS")
     default <- if (nrow(lpj_files) >= 1) lpj_files$filename[1] else NULL
 
+    choices_list <- file_info() %>%
+      arrange(forest_model, scenario, filename) %>%
+      group_split(forest_model) %>%
+      setNames(map_chr(., ~ paste0("— ", unique(.x$forest_model), " —"))) %>%
+      map(function(df) {
+        setNames(df$filename, paste(df$scenario, df$case, sep = " | "))
+      })
+
     selectInput("file_A", "Select Forest File A",
-                choices = sort(file_info()$filename),
+                choices = choices_list,
                 selected = default)
   })
 
@@ -218,8 +191,16 @@ server <- function(input, output, session) {
     lpj_files <- file_info() %>% filter(forest_model == "LPJ-GUESS")
     default <- if (nrow(lpj_files) >= 2) lpj_files$filename[2] else NULL
 
+    choices_list <- file_info() %>%
+      arrange(forest_model, scenario, filename) %>%
+      group_split(forest_model) %>%
+      setNames(map_chr(., ~ paste0("— ", unique(.x$forest_model), " —"))) %>%
+      map(function(df) {
+        setNames(df$filename, paste(df$scenario, df$case, sep = " | "))
+      })
+
     selectInput("file_B", "Select Forest File B",
-                choices = sort(file_info()$filename),
+                choices = choices_list,
                 selected = default)
   })
 
@@ -246,12 +227,12 @@ server <- function(input, output, session) {
     data <- load_forest_data(input$file_A)
 
     # SELFNOTE: Debug-prints
-    cat("=== forest_data_A loaded ===\n")
-    cat("File A:", input$file_A, "\n")
-    print("Column names:")
-    print(names(data))
-    print("First 3 rows:")
-    print(head(data, 3))
+#    cat("=== forest_data_A loaded ===\n")
+#    cat("File A:", input$file_A, "\n")
+#    print("Column names:")
+#    print(names(data))
+#    print("First 3 rows:")
+#    print(head(data, 3))
 
     return(data)
   })
@@ -261,12 +242,12 @@ server <- function(input, output, session) {
       data <- load_forest_data(input$file_B)
 
       # SELFNOTE: Debug-prints
-      cat("=== forest_data_B loaded ===\n")
-      cat("File B:", input$file_B, "\n")
-      print("Column names:")
-      print(names(data))
-      print("First 3 rows:")
-      print(head(data, 3))
+#      cat("=== forest_data_B loaded ===\n")
+#      cat("File B:", input$file_B, "\n")
+#      print("Column names:")
+#      print(names(data))
+#      print("First 3 rows:")
+#      print(head(data, 3))
 
       return(data)
     } else {
