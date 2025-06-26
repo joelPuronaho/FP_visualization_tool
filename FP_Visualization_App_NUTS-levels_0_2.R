@@ -48,7 +48,7 @@ ui <- fluidPage(
       }
     "))
   ),
-  titlePanel("Visualization App - Work in Progress | Choose the input files shown on map, click on NUTS-regions to activate the plots"),
+  titlePanel("Canopy App - Work in Progress"),
   sidebarLayout(
     sidebarPanel(
       selectInput("nuts_level", "Select NUTS Level",
