@@ -48,7 +48,7 @@ ui <- fluidPage(
       }
     "))
   ),
-  titlePanel("Canopy App - Work in Progress"),
+  titlePanel("Canopy App - Git version"),
   sidebarLayout(
     sidebarPanel(
       selectInput("nuts_level", "Select NUTS Level",
