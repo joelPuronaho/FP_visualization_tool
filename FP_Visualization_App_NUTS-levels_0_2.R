@@ -56,7 +56,7 @@ ui <- fluidPage(
             selected = "0"),
       uiOutput("select_file_A"),
       uiOutput("file_A_info"),
-      checkboxInput("compare_mode", "Disable / Enable comparison mode", value = TRUE),
+      checkboxInput("compare_mode", "Enable / Disable comparison mode", value = TRUE),
       conditionalPanel(
         condition = "input.compare_mode == true",
         tagList(
@@ -115,6 +115,11 @@ ui <- fluidPage(
         top = 10, left = "17.5%", width = 300,
         style = "transform: translateX(-50%); background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0px 0px 5px #aaa;",
         uiOutput("map_metadata_info")
+      ),
+      absolutePanel(
+        top = 10, left = "82.5%", width = 300,
+        style = "transform: translateX(-50%); background-color: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px; text-align: center; box-shadow: 0px 0px 5px #aaa;",
+        uiOutput("case_metadata_info")
       ),
       br(),
       plotOutput("timeseries_plot", height = 300),
@@ -222,6 +227,17 @@ server <- function(input, output, session) {
     } else {
       return(NULL)
     }
+  })
+
+  output$case_metadata_info <- renderUI({
+    req(input$file_A)
+
+    info_text <- paste0(
+      "<strong>Exploratory Case Info:</strong><br/>",
+      get_case_metadata(input$file_A)
+    )
+
+    HTML(paste("<small>", info_text, "</small>"))
   })
 
   # Load metadata
