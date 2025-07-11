@@ -209,6 +209,21 @@ server <- function(input, output, session) {
     selected_nuts(NULL)
   })
 
+  # Load "Forest data A"
+  forest_data_A <- reactive({
+    data <- load_forest_data(input$file_A)
+    return(data)
+  })
+  # Load "Forest data B"
+  forest_data_B <- reactive({
+    if (isTRUE(input$compare_mode)) {
+      data <- load_forest_data(input$file_B)
+      return(data)
+    } else {
+      return(NULL)
+    }
+  })
+
   # Load metadata
   get_metadata <- function(filename) {
     fi <- file_info()
@@ -221,40 +236,6 @@ server <- function(input, output, session) {
       "Metadata not found."
     }
   }
-
-  # Load "Forest data A"
-  forest_data_A <- reactive({
-    data <- load_forest_data(input$file_A)
-
-    # SELFNOTE: Debug-prints
-#    cat("=== forest_data_A loaded ===\n")
-#    cat("File A:", input$file_A, "\n")
-#    print("Column names:")
-#    print(names(data))
-#    print("First 3 rows:")
-#    print(head(data, 3))
-
-    return(data)
-  })
-  # Load "Forest data B"
-  forest_data_B <- reactive({
-    if (isTRUE(input$compare_mode)) {
-      data <- load_forest_data(input$file_B)
-
-      # SELFNOTE: Debug-prints
-#      cat("=== forest_data_B loaded ===\n")
-#      cat("File B:", input$file_B, "\n")
-#      print("Column names:")
-#      print(names(data))
-#      print("First 3 rows:")
-#      print(head(data, 3))
-
-      return(data)
-    } else {
-      return(NULL)
-    }
-  })
-
 
   # SELFNOTE: New addition, metadata on top of the map.
   output$map_metadata_info <- renderUI({
