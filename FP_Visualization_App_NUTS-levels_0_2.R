@@ -361,6 +361,7 @@ server <- function(input, output, session) {
 
     # SELFNOTE: Unit comes from "Forest A". If user chooses data from two models, might be confusing. 
     if (isTRUE(input$compare_mode)) {
+      print(" **  COMPARE MODE START  **")
       df_diff <- full_join(
         filtered_data_A() %>% select(NUTS_ID, value_A = weighted_average_value, unit, forest_surface_area, surface_area, nuts_name = NUTS_NAME),
         filtered_data_B() %>% select(NUTS_ID, value_B = weighted_average_value),
@@ -428,6 +429,10 @@ server <- function(input, output, session) {
         addLegend("bottomright", colors = "#d9d9d9", labels = "No data", opacity = 0.8, title = NULL)
 
     } else {
+
+
+
+      print(" **  NON-COMPARE MODE START  **")
       df <- filtered_data_A() %>%
         filter(!is.na(weighted_average_value)) %>%
         select(NUTS_ID, weighted_average_value, forest_surface_area, surface_area, nuts_name = NUTS_NAME, unit)
@@ -447,11 +452,6 @@ server <- function(input, output, session) {
           na.color = "#d9d9d9"
         )
       }
-
-      print("Map data preview:")
-      print(head(map_data))
-      print(summary(map_data$weighted_average_value))
-      print(unique(map_data$year))
 
       leaflet(map_data) %>%
         setView(lng = center$lng, lat = center$lat, zoom = zoom) %>%
