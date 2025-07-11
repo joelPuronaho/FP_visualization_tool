@@ -39,6 +39,7 @@ library(tidyr)
 library(plotly)
 library(tidyverse)
 library(shinyWidgets)
+library(htmltools)
 
 ui <- fluidPage(
   tags$head(
@@ -228,6 +229,44 @@ server <- function(input, output, session) {
       return(NULL)
     }
   })
+
+  get_case_metadata <- function(filename) {
+    #print("GET CASE METADATA FUNCTION START")
+    fi <- file_info()
+    entry <- fi[fi$filename == filename, ]
+
+    if (nrow(entry) != 1) {
+      return("Case metadata not found (file_info lookup failed).")
+    }
+
+    case_id <- trimws(as.character(entry$case))
+    print(paste("Looking for case_id:", case_id))
+
+    case_info <- read.csv(
+      "data/case_data/exploratory_case_data_final.csv",
+      sep = ";",
+      quote = "\"",
+      stringsAsFactors = FALSE,
+      fill = TRUE,
+      strip.white = TRUE,
+      fileEncoding = "UTF-8"
+    )
+
+    case_info$case <- trimws(as.character(case_info$case))
+    case_entry <- case_info[case_info$case == case_id, ]
+
+    if (nrow(case_entry) == 1) {
+      escaped_description <- htmlEscape(case_entry$description)
+      paste0(
+        "<strong>Category:</strong> ", case_entry$category, "<br/>",
+        "<strong>Action:</strong> ", case_entry$action, "<br/>",
+        "<details><summary><strong>Description:</strong> (click to expand)</summary>",
+        escaped_description, "</details>"
+      )
+    } else {
+      "Case metadata not found (CSV lookup failed)."
+    }
+  }
 
   output$case_metadata_info <- renderUI({
     req(input$file_A)
